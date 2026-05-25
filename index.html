@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Department Letter Generator — Loyola College</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+:root{
+  --maroon:#6b0f1a;
+  --gold:#b8952a;
+  --light-gold:#f5e9c8;
+  --cream:#fdf8f0;
+  --dark:#1a0a0f;
+  --gray:#6b6b6b;
+  --border:#d4c09a;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Georgia',serif;background:var(--cream);color:var(--dark);min-height:100vh;}
+
+.app-header{background:var(--maroon);padding:14px 28px;display:flex;align-items:center;gap:16px;box-shadow:0 2px 12px #0004;}
+.header-logo{width:48px;height:48px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--maroon);font-weight:bold;flex-shrink:0;}
+.header-title{color:#fff;}
+.header-title h1{font-size:17px;font-weight:bold;letter-spacing:.5px;}
+.header-title p{font-size:11px;color:#e8c98a;margin-top:2px;}
+
+.tabs{display:flex;background:#fff;border-bottom:2px solid var(--border);}
+.tab-btn{padding:13px 26px;border:none;background:none;font-family:'Georgia',serif;font-size:13px;color:var(--gray);border-bottom:3px solid transparent;cursor:pointer;display:flex;align-items:center;gap:7px;transition:color .2s;}
+.tab-btn.active{color:var(--maroon);border-bottom-color:var(--gold);font-weight:bold;}
+.tab-btn:hover{color:var(--maroon);}
+
+.form-wrap{max-width:860px;margin:0 auto;padding:28px 16px;}
+.form-section{background:#fff;border-radius:10px;border:1px solid var(--border);margin-bottom:22px;overflow:hidden;}
+.form-section-head{background:var(--maroon);padding:12px 20px;color:#f5e9c8;font-size:13px;font-weight:bold;display:flex;align-items:center;gap:8px;}
+.form-section-body{padding:20px;}
+.row{display:grid;gap:16px;margin-bottom:16px;}
+.row-2{grid-template-columns:1fr 1fr;}
+.row-1{grid-template-columns:1fr;}
+.field label{display:block;font-size:11px;font-weight:bold;color:var(--gray);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;}
+.field label i{margin-right:5px;color:var(--gold);}
+.field input,.field select,.field textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;font-family:'Georgia',serif;outline:none;background:#fff;color:var(--dark);transition:border-color .2s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--maroon);}
+.field textarea{resize:vertical;min-height:80px;}
+.radio-group{display:flex;gap:12px;flex-wrap:wrap;}
+.radio-opt{display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 14px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;transition:all .15s;}
+.radio-opt.selected{border-color:var(--maroon);background:var(--light-gold);font-weight:bold;}
+.check-opt{display:flex;align-items:center;cursor:pointer;padding:8px 16px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:#fff;transition:all .15s;flex-direction:column;min-width:130px;text-align:center;}
+.check-opt.selected{border-color:var(--maroon);background:var(--maroon);color:#fff;}
+.check-opt .hour-time{font-size:10px;opacity:.75;margin-top:2px;}
+.check-top{display:flex;align-items:center;gap:8px;}
+table.students-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+table.students-table th{background:var(--maroon);color:#f5e9c8;padding:8px 10px;text-align:left;font-weight:bold;}
+table.students-table td{padding:6px 8px;border-bottom:1px solid #eee;}
+table.students-table tr:nth-child(even){background:#faf6ee;}
+.btn{padding:9px 20px;border-radius:7px;border:none;cursor:pointer;font-family:'Georgia',serif;font-size:13px;display:inline-flex;align-items:center;gap:7px;transition:all .15s;}
+.btn-primary{background:var(--maroon);color:#fff;font-weight:bold;}
+.btn-primary:hover{background:#8b1523;}
+.btn-gold{background:var(--gold);color:#fff;font-weight:bold;}
+.btn-gold:hover{background:#9a7a1e;}
+.btn-outline{background:#fff;border:1.5px solid var(--maroon);color:var(--maroon);}
+.btn-outline:hover{background:var(--light-gold);}
+.btn-danger{background:#fee;border:1px solid #fcc;color:#c00;padding:4px 10px;font-size:12px;}
+.btn-add{background:#fff;border:1.5px dashed var(--maroon);color:var(--maroon);}
+.staff-row{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin-bottom:10px;align-items:end;}
+
+/* PREVIEW */
+.preview-wrap{padding:24px 16px;display:flex;flex-direction:column;align-items:center;}
+.preview-actions{width:100%;max-width:210mm;margin:0 auto 16px;display:flex;gap:10px;justify-content:flex-end;align-items:center;flex-wrap:wrap;}
+.print-tip{font-size:12px;color:var(--gray);font-style:italic;margin-right:auto;}
+
+/* ===== LETTER STYLES — FITS ALL CONTENT ON A4 ===== */
+#letter-area{
+  font-family:'Times New Roman',Times,serif;
+  color:#000;
+  background:#fff;
+  width:210mm;
+  min-height:297mm;
+  padding:1.2cm 1.8cm 1.2cm 1.8cm;
+  margin:0 auto;
+  box-shadow:0 4px 32px #0003;
+  box-sizing:border-box;
+  position:relative;
+  /* Auto-scale font to fit page */
+  font-size:10.5pt;
+  line-height:1.35;
+}
+
+/* College header border lines */
+.letter-header-lines{
+  border-top:3px double #000;
+  border-bottom:1px solid #000;
+  padding:6px 0;
+  margin-bottom:10px;
+  text-align:center;
+}
+.letter-college-name{font-size:13pt;font-weight:bold;letter-spacing:.5px;}
+.letter-dept-name{font-size:10.5pt;margin-top:2px;}
+.letter-autonomous{font-size:9.5pt;color:#333;margin-top:1px;}
+
+.letter-title{
+  text-align:center;
+  font-size:11pt;
+  font-weight:bold;
+  text-decoration:underline;
+  margin:8px 0;
+  text-transform:uppercase;
+  letter-spacing:.3px;
+}
+
+/* DATE AND PLACE — LEFT ALIGNED, stacked */
+.letter-place-date{
+  text-align:left;
+  margin-bottom:10px;
+  font-size:10.5pt;
+  line-height:1.6;
+}
+.letter-place-date .place-line{display:block;}
+.letter-place-date .date-line{display:block;}
+
+.letter-from{margin-bottom:8px;font-size:10.5pt;line-height:1.5;}
+.letter-to{margin-bottom:8px;font-size:10.5pt;line-height:1.5;}
+.letter-subject{margin-bottom:8px;font-size:10.5pt;}
+.letter-salutation{margin-bottom:8px;font-size:10.5pt;}
+
+.letter-body{
+  font-size:10.5pt;
+  margin-bottom:8px;
+  text-align:justify;
+}
+.letter-body p{
+  text-indent:2em;
+  margin-bottom:6px;
+}
+
+/* Compact Tables */
+.compact-table{width:100%;border-collapse:collapse;font-size:9.5pt;margin-bottom:8px;}
+.compact-table th,.compact-table td{border:1px solid #000;padding:3px 6px;}
+.compact-table th{background:#f0f0f0;font-weight:bold;text-align:left;}
+
+.letter-closing{font-size:10.5pt;margin-bottom:8px;line-height:1.6;}
+
+/* Signatures — flex row, auto-wrap */
+.sign-block{
+  display:flex;
+  flex-wrap:wrap;
+  gap:20px 30px;
+  margin-top:8px;
+  margin-bottom:10px;
+}
+.sign-unit{min-width:120px;flex:1 1 120px;max-width:180px;}
+.sign-unit .sign-line{
+  border-bottom:1px solid #000;
+  height:32px;
+  margin-bottom:3px;
+}
+.sign-unit .sign-name{font-weight:bold;font-size:9.5pt;}
+.sign-unit .sign-role{font-size:9pt;color:#111;}
+.sign-unit .sign-dept{font-size:8.5pt;color:#333;}
+
+.hod-block{
+  display:flex;
+  justify-content:flex-end;
+  margin-top:10px;
+}
+.hod-unit{text-align:center;min-width:200px;}
+.hod-unit .sign-line{border-bottom:1px solid #000;height:32px;margin-bottom:3px;}
+.hod-unit .hod-name{font-weight:bold;font-size:10pt;}
+.hod-unit .hod-role{font-size:9.5pt;}
+.hod-unit .hod-dept{font-size:9pt;color:#333;}
+.hod-unit .hod-date{font-size:9.5pt;margin-top:4px;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:#0008;z-index:999;display:flex;align-items:center;justify-content:center;}
+.modal-box{background:#fff;border-radius:12px;padding:28px 32px;max-width:440px;width:90%;box-shadow:0 8px 40px #0005;}
+.modal-box h3{font-size:16px;color:var(--maroon);margin-bottom:14px;}
+.modal-box .steps{background:var(--cream);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin:12px 0;}
+.modal-box .step{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;font-size:13px;}
+.modal-box .step-num{background:var(--maroon);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
+.modal-box .close-btn{margin-top:16px;width:100%;}
+
+/* PRINT — strict A4, no UI */
+@media print{
+  body{background:#fff !important;}
+  .app-header,.tabs,#pane-form,.preview-actions,.modal-overlay{display:none !important;}
+  #pane-preview{display:block !important;padding:0 !important;margin:0 !important;}
+  .preview-wrap{padding:0 !important;margin:0 !important;}
+  #letter-area{
+    box-shadow:none !important;
+    margin:0 !important;
+    width:210mm !important;
+    min-height:297mm !important;
+    padding:1.2cm 1.8cm !important;
+    page-break-after:avoid !important;
+  }
+  @page{size:A4;margin:0;}
+}
+</style>
+</head>
+<body>
+
+<!-- PRINT MODAL -->
+<div class="modal-overlay" id="print-modal" style="display:none;">
+  <div class="modal-box">
+    <h3><i class="fa-solid fa-print"></i> Saving / Printing Your Letter</h3>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div>Select <strong>"Save as PDF"</strong> or <strong>"Microsoft Print to PDF"</strong>.</div></div>
+      <div class="step"><div class="step-num">2</div><div>Set <strong>Paper Size</strong> to <strong>A4</strong> and margins to <strong>None</strong>.</div></div>
+      <div class="step"><div class="step-num">3</div><div>Choose your folder and click <strong>Save</strong>.</div></div>
+    </div>
+    <p id="modal-mobile-note" style="display:none;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:10px 12px;font-size:12px;"><strong>On mobile:</strong> Tap <em>Share</em> → <em>Print</em> → pinch-zoom to thumbnail → tap PDF icon.</p>
+    <button class="btn btn-primary close-btn" onclick="closePrintModal()">Got it — continue</button>
+  </div>
+</div>
+
+<!-- APP HEADER -->
+<div class="app-header">
+  <div class="header-logo">LC</div>
+  <div class="header-title">
+    <h1>Department Letter Generator</h1>
+    <p>PG &amp; Research Dept. of Advanced Zoology and Biotechnology, Loyola College (Autonomous), Chennai – 600 034</p>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('form',this)" id="tab-form"><i class="fa-solid fa-pen-to-square"></i> Fill Details</button>
+  <button class="tab-btn" onclick="switchTab('preview',this)" id="tab-preview"><i class="fa-regular fa-file-lines"></i> Preview &amp; Download</button>
+</div>
+
+<!-- FORM PANE -->
+<div id="pane-form" class="form-wrap">
+
+  <!-- SECTION 1: Sender -->
+  <div class="form-section">
+    <div class="form-section-head"><i class="fa-solid fa-user-pen"></i> 1. Sender Details</div>
+    <div class="form-section-body">
+      <div class="row row-2">
+        <div class="field">
+          <label><i class="fa-solid fa-user"></i> Full Name</label>
+          <input id="s-name" type="text" value="Varadharaj D." oninput="syncPreview()"/>
+        </div>
+        <div class="field">
+          <label><i class="fa-solid fa-id-badge"></i> Department Number</label>
+          <input id="s-deptno" type="text" placeholder="e.g. 25-UAZ-016" oninput="syncPreview()"/>
+        </div>
+      </div>
+      <div class="row row-2">
+        <div class="field">
+          <label><i class="fa-solid fa-graduation-cap"></i> Class</label>
+          <select id="s-class" onchange="syncPreview()">
+            <option value="I B.Sc. AZ-BT">I B.Sc. AZ-BT</option>
+            <option value="II B.Sc. AZ-BT">II B.Sc. AZ-BT</option>
+            <option value="III B.Sc. AZ-BT">III B.Sc. AZ-BT</option>
+            <option value="I M.Sc. Zoo">I M.Sc. Zoo</option>
+            <option value="II M.Sc. Zoo">II M.Sc. Zoo</option>
+          </select>
+        </div>
+        <div class="field">
+          <label><i class="fa-solid fa-briefcase"></i> Post / Role</label>
+          <select id="s-role-select" onchange="handleRoleSelect()">
+            <option value="Department Secretary">Department Secretary</option>
+            <option value="Department Joint Secretary">Department Joint Secretary</option>
+            <option value="Event Secretary">Event Secretary</option>
+            <option value="Cultural Secretary">Cultural Secretary</option>
+            <option value="Cultural Joint Secretary">Cultural Joint Secretary</option>
+            <option value="Sports Secretary">Sports Secretary</option>
+            <option value="Sports Joint Secretary">Sports Joint Secretary</option>
+            <option value="custom">Other (Custom Entry)</option>
+          </select>
+        </div>
+      </div>
+      <div id="role-custom-wrap" style="display:none;" class="row row-1">
+        <div class="field">
+          <label><i class="fa-solid fa-keyboard"></i> Enter Custom Role</label>
+          <input id="s-role-custom" type="text" placeholder="Enter designation" oninput="syncPreview()"/>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Letter Info -->
+  <div class="form-section">
+    <div class="form-section-head"><i class="fa-solid fa-calendar-days"></i> 2. Letter Information</div>
+    <div class="form-section-body">
+      <div class="row row-2">
+        <div class="field">
+          <label><i class="fa-solid fa-heading"></i> Letter Title</label>
+          <input id="l-title" type="text" value="Letter for Request for Physical Attendance" oninput="syncPreview()"/>
+        </div>
+        <div class="field">
+          <label><i class="fa-solid fa-venus-mars"></i> Gender (for salutation)</label>
+          <div class="radio-group">
+            <label class="radio-opt" id="gen-m" onclick="selectGender('male')"><input type="radio" name="gender" value="male" style="display:none"/> <i class="fa-solid fa-mars"></i> Male (Sir)</label>
+            <label class="radio-opt selected" id="gen-f" onclick="selectGender('female')"><input type="radio" name="gender" value="female" checked style="display:none"/> <i class="fa-solid fa-venus"></i> Female (Ma'am)</label>
+          </div>
+        </div>
+      </div>
+      <div class="row row-2">
+        <div class="field">
+          <label><i class="fa-regular fa-calendar"></i> Date</label>
+          <input id="l-date" type="date" onchange="syncPreview()"/>
+        </div>
+        <div class="field">
+          <label><i class="fa-solid fa-location-dot"></i> Place</label>
+          <input id="l-place" type="text" value="Chennai" oninput="syncPreview()"/>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Event -->
+  <div class="form-section">
+    <div class="form-section-head"><i class="fa-solid fa-flag"></i> 3. Event Details</div>
+    <div class="form-section-body">
+      <div class="row row-2">
+        <div class="field">
+          <label><i class="fa-solid fa-star"></i> Event Name</label>
+          <input id="e-name" type="text" placeholder="e.g. Inter-College Cricket Tournament" oninput="autoUpdateText(); syncPreview()"/>
+        </div>
+        <div class="field">
+          <label><i class="fa-regular fa-calendar-check"></i> Event Date</label>
+          <input id="e-date" type="date" onchange="autoUpdateText(); syncPreview()"/>
+        </div>
+      </div>
+      <div class="row row-2">
+        <div class="field">
+          <label><i class="fa-solid fa-building-columns"></i> Venue</label>
+          <input id="e-venue" type="text" placeholder="e.g. Loyola College" oninput="autoUpdateText(); syncPreview()"/>
+        </div>
+        <div class="field">
+          <label><i class="fa-solid fa-map-pin"></i> Event Location</label>
+          <div class="radio-group">
+            <label class="radio-opt selected" id="loc-in" onclick="selectLocation('inside')"><input type="radio" name="location" value="inside" checked style="display:none"/> Inside College</label>
+            <label class="radio-opt" id="loc-out" onclick="selectLocation('outside')"><input type="radio" name="location" value="outside" style="display:none"/> Outside College</label>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label><i class="fa-solid fa-list-check"></i> Reason</label>
+        <div class="radio-group" style="margin-top:6px;">
+          <label class="radio-opt selected" id="r-sp" onclick="selectReason('sports_practice')">Sports Practice</label>
+          <label class="radio-opt" id="r-se" onclick="selectReason('sports_event')">Sports Event</label>
+          <label class="radio-opt" id="r-cp" onclick="selectReason('cultural_practice')">Cultural Practice</label>
+          <label class="radio-opt" id="r-ce" onclick="selectReason('cultural_event')">Cultural Event</label>
+          <label class="radio-opt" id="r-te" onclick="selectReason('technical_event')">Technical Event</label>
+          <label class="radio-opt" id="r-ot" onclick="selectReason('other')">Other</label>
+        </div>
+        <div id="reason-custom-wrap" style="display:none;margin-top:10px;">
+          <input type="text" id="reason-custom" placeholder="Specify the reason..." oninput="autoUpdateText(); syncPreview()"/>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: Body -->
+  <div class="form-section">
+    <div class="form-section-head"><i class="fa-solid fa-align-left"></i> 4. Editable Subject &amp; Body</div>
+    <div class="form-section-body">
+      <div class="field" style="margin-bottom:12px;">
+        <label>Subject</label>
+        <input id="l-subject" type="text" oninput="markUserEdited(); syncPreview()"/>
+      </div>
+      <div class="field">
+        <label>Letter Body (auto-generated, edit if needed)</label>
+        <textarea id="l-body" rows="7" oninput="markUserEdited(); syncPreview()"></textarea>
+      </div>
+      <button class="btn btn-outline" style="margin-top:10px;font-size:11px;" onclick="forceAutoUpdateText(); syncPreview()"><i class="fa-solid fa-rotate-right"></i> Regenerate from Event Details</button>
+    </div>
+  </div>
+
+  <!-- SECTION 5: Hours -->
+  <div class="form-section">
+    <div class="form-section-head"><i class="fa-regular fa-clock"></i> 5. Hours Requested</div>
+    <div class="form-section-body">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;" id="hours-container"></div>
+    </div>
+  </div>
+
+  <!-- SECTION 6: Students -->
+  <div class="form-section">
+    <div class="form-section-head"><i class="fa-solid fa-users"></i> 6. Students List</div>
+    <div class="form-section-body">
+      <div style="overflow-x:auto;">
+        <table class="students-table" id="students-table">
+          <thead>
+            <tr>
+              <th style="width:40px;">#</th>
+              <th>Full Name</th>
+              <th style="width:140px;">Dept. Number</th>
+              <th style="width:160px;">Class</th>
+              <th style="width:50px;"></th>
+            </tr>
+          </thead>
+          <tbody id="students-body"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-add" style="margin-top:12px;" onclick="addStudent()"><i class="fa-solid fa-plus"></i> Add Student</button>
+    </div>
+  </div>
+
+  <!-- SECTION 7: Staff -->
+  <div class="form-section">
+    <div class="form-section-head"><i class="fa-solid fa-chalkboard-user"></i> 7. Staff &amp; HOD</div>
+    <div class="form-section-body">
+      <div id="staff-list"></div>
+      <button class="btn btn-add" onclick="addStaff()"><i class="fa-solid fa-plus"></i> Add Accompanying Staff</button>
+      <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--border);">
+        <div class="row row-2">
+          <div class="field">
+            <label><i class="fa-solid fa-person-chalkboard"></i> Head of Department Name</label>
+            <input id="hod-name" type="text" value="Dr. V. Pushpa Rani" oninput="syncPreview()"/>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;gap:12px;padding-bottom:32px;">
+    <button class="btn btn-primary" onclick="switchTab('preview', document.getElementById('tab-preview'))">
+  <i class="fa-regular fa-eye"></i> Preview Letter
+</button>
+  </div>
+</div>
+
+<!-- PREVIEW PANE -->
+<div id="pane-preview" style="display:none;">
+  <div class="preview-wrap">
+    <div class="preview-actions">
+      <span class="print-tip"><i class="fa-solid fa-circle-info"></i> A4 format — content auto-adjusts to fit one page.</span>
+      <button class="btn btn-outline" onclick="switchTab('form', document.getElementById('tab-form'))"><i class="fa-solid fa-arrow-left"></i> Edit</button>
+      <button class="btn btn-gold" onclick="downloadPDF()"><i class="fa-solid fa-file-pdf"></i> Download PDF</button>
+      <button class="btn btn-primary" onclick="showPrintModal()"><i class="fa-solid fa-print"></i> Print</button>
+    </div>
+
+    <!-- THE LETTER — A4 -->
+    <div id="letter-area">
+
+      <!-- College Letterhead -->
+      <div class="letter-header-lines">
+        <div class="letter-college-name">LOYOLA COLLEGE (AUTONOMOUS), CHENNAI – 600 034</div>
+        <div class="letter-dept-name">PG &amp; Research Department of Advanced Zoology and Biotechnology</div>
+        <div class="letter-autonomous">(Accredited with 'A++' Grade by NAAC | An Autonomous College under University of Madras)</div>
+      </div>
+
+      <!-- Title -->
+      <div class="letter-title" id="lv-title"></div>
+
+      <!-- Place & Date — LEFT, stacked, Date on top -->
+      <div class="letter-place-date">
+        <span class="date-line"><strong>Date:</strong> <span id="lv-date"></span></span>
+        <span class="place-line"><strong>Place:</strong> <span id="lv-place"></span></span>
+      </div>
+
+      <!-- From -->
+      <div class="letter-from">
+        <strong>From,</strong><br>
+        <span id="lv-sname"></span><br>
+        <span id="lv-sdeptno-line"></span>
+        <span id="lv-sclass"></span><br>
+        <span id="lv-srole"></span><br>
+        PG &amp; Research Department of Advanced Zoology and Biotechnology,<br>
+        Loyola College (Autonomous), Chennai – 600 034.
+      </div>
+
+      <!-- To -->
+      <div class="letter-to">
+        <strong>To</strong><br>
+        The Head of the Department,<br>
+        PG &amp; Research Department of Advanced Zoology and Biotechnology,<br>
+        Loyola College (Autonomous), Chennai – 600 034.
+      </div>
+
+      <!-- Subject -->
+      <div class="letter-subject">
+        <strong>Sub:</strong> <span id="lv-subject"></span>
+      </div>
+
+      <!-- Salutation -->
+      <div class="letter-salutation">Respected <span id="lv-salutation">Ma'am</span>,</div>
+
+      <!-- Body -->
+      <div class="letter-body" id="lv-body"></div>
+
+      <!-- Hours Table -->
+      <div id="lv-hours-section" style="margin-bottom:8px;">
+        <table class="compact-table">
+          <thead>
+            <tr>
+              <th style="width:120px;">Hour</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody id="lv-hours-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Students Table -->
+      <div id="lv-students-section" style="margin-bottom:8px;">
+        <p style="margin-bottom:4px;font-size:10pt;">The following students require attendance permission:</p>
+        <table class="compact-table">
+          <thead>
+            <tr>
+              <th style="width:32px;text-align:center;">S.No</th>
+              <th>Name of the Student</th>
+              <th style="width:120px;text-align:center;">Dept. Number</th>
+              <th style="width:100px;text-align:center;">Class</th>
+            </tr>
+          </thead>
+          <tbody id="lv-students-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Closing -->
+      <div class="letter-closing">
+        We assure you that the mentioned students will attend all remaining hours responsibly. We therefore earnestly request you to kindly grant the attendance permission.<br><br>
+        Thanking you,<br>
+        Yours faithfully,
+      </div>
+
+      <!-- Signatures -->
+      <div class="sign-block" id="lv-signatures"></div>
+
+      <!-- HOD Sign -->
+      <div class="hod-block">
+        <div class="hod-unit">
+          <div class="sign-line"></div>
+          <div class="hod-name" id="lv-hod-name-sig"></div>
+          <div class="hod-role">Head of the Department</div>
+          <div class="hod-dept">PG &amp; Research Dept. of AZ &amp; BT<br>Loyola College (Autonomous), Ch – 34</div>
+          <div class="hod-date">Date: ___ / ___ / _____</div>
+        </div>
+      </div>
+
+    </div><!-- end letter-area -->
+  </div>
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+const HOURS = [
+  {label:"1st Hour", time:"08:15 AM – 09:10 AM"},
+  {label:"2nd Hour", time:"09:10 AM – 10:05 AM"},
+  {label:"3rd Hour", time:"10:05 AM – 11:00 AM"},
+  {label:"4th Hour", time:"11:25 AM – 12:20 PM"},
+  {label:"5th Hour", time:"12:20 PM – 01:15 PM"},
+];
+const FULL_CLASS = {
+  "I B.Sc. AZ-BT":  "I Year B.Sc. Advanced Zoology and Biotechnology",
+  "II B.Sc. AZ-BT": "II Year B.Sc. Advanced Zoology and Biotechnology",
+  "III B.Sc. AZ-BT":"III Year B.Sc. Advanced Zoology and Biotechnology",
+  "I M.Sc. Zoo":    "I Year M.Sc. Zoology",
+  "II M.Sc. Zoo":   "II Year M.Sc. Zoology",
+};
+
+let selectedHours    = [0,1,2];
+let selectedGender   = 'female'; // DEFAULT: female
+let selectedLocation = 'inside';
+let selectedReason   = 'sports_practice';
+let userEditedText   = false;
+let students = [
+  {name:'',deptno:'',cls:'I B.Sc. AZ-BT'},
+  {name:'',deptno:'',cls:'I B.Sc. AZ-BT'},
+  {name:'',deptno:'',cls:'I B.Sc. AZ-BT'},
+];
+let staffList = [];
+
+// ─── DATE INIT ────────────────────────────────────────────────────────────
+const today = new Date();
+const todayStr = today.toISOString().split('T')[0];
+const dInput = document.getElementById('l-date');
+dInput.value = todayStr;
+dInput.min = new Date(Date.now()-7*864e5).toISOString().split('T')[0];
+dInput.max = new Date(Date.now()+7*864e5).toISOString().split('T')[0];
+
+// ─── HOURS BUILDER ────────────────────────────────────────────────────────
+(function(){
+  const c = document.getElementById('hours-container');
+  HOURS.forEach((h,i) => {
+    const el = document.createElement('label');
+    el.className = 'check-opt' + (selectedHours.includes(i)?' selected':'');
+    el.id = 'hour-'+i;
+    el.innerHTML = `<div class="check-top">
+      <input type="checkbox" ${selectedHours.includes(i)?'checked':''} style="accent-color:var(--gold)"/>
+      <strong>${h.label}</strong>
+    </div>
+    <div class="hour-time">${h.time}</div>`;
+    el.onclick = () => toggleHour(i, el);
+    c.appendChild(el);
+  });
+})();
+
+function toggleHour(i, el) {
+  if (selectedHours.includes(i)) {
+    selectedHours = selectedHours.filter(h => h !== i);
+  } else {
+    selectedHours = [...selectedHours, i].sort((a,b)=>a-b);
+  }
+  el.classList.toggle('selected', selectedHours.includes(i));
+  el.querySelector('input').checked = selectedHours.includes(i);
+  syncPreview();
+}
+
+// ─── STUDENTS ─────────────────────────────────────────────────────────────
+function renderStudents() {
+  const tb = document.getElementById('students-body');
+  tb.innerHTML = '';
+  const CLASS_OPTS = ['I B.Sc. AZ-BT','II B.Sc. AZ-BT','III B.Sc. AZ-BT','I M.Sc. Zoo','II M.Sc. Zoo'];
+  students.forEach((s,i) => {
+    const opts = CLASS_OPTS.map(c => `<option value="${c}" ${s.cls===c?'selected':''}>${c}</option>`).join('');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${i+1}</td>
+      <td><input style="width:100%;padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-family:'Georgia',serif;font-size:13px;" value="${escHtml(s.name)}" placeholder="Full name" oninput="students[${i}].name=this.value;syncPreview()"/></td>
+      <td><input style="width:100%;padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-family:'Georgia',serif;font-size:13px;" value="${escHtml(s.deptno)}" placeholder="25-UAZ-016" oninput="students[${i}].deptno=this.value;syncPreview()"/></td>
+      <td><select style="width:100%;padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-family:'Georgia',serif;font-size:12px;" onchange="students[${i}].cls=this.value;syncPreview()">${opts}</select></td>
+      <td><button class="btn btn-danger" onclick="removeStudent(${i})"><i class="fa-solid fa-xmark"></i></button></td>`;
+    tb.appendChild(tr);
+  });
+}
+function addStudent() { students.push({name:'',deptno:'',cls:'I B.Sc. AZ-BT'}); renderStudents(); syncPreview(); }
+function removeStudent(i) { students.splice(i,1); renderStudents(); syncPreview(); }
+renderStudents();
+
+// ─── STAFF ────────────────────────────────────────────────────────────────
+function renderStaff() {
+  const c = document.getElementById('staff-list');
+  c.innerHTML = '';
+  staffList.forEach((sf,i) => {
+    const row = document.createElement('div');
+    row.className = 'staff-row';
+    row.innerHTML = `
+      <div class="field"><label>Staff Name</label><input type="text" value="${escHtml(sf.name)}" placeholder="Dr. K. Selvam" oninput="staffList[${i}].name=this.value;syncPreview()"/></div>
+      <div class="field"><label>Designation</label><input type="text" value="${escHtml(sf.role)}" placeholder="Staff Advisor" oninput="staffList[${i}].role=this.value;syncPreview()"/></div>
+      <div class="field"><label>&nbsp;</label><button class="btn btn-danger" style="margin-top:22px;" onclick="removeStaff(${i})"><i class="fa-solid fa-xmark"></i> Remove</button></div>`;
+    c.appendChild(row);
+  });
+}
+function addStaff() { staffList.push({name:'',role:''}); renderStaff(); syncPreview(); }
+function removeStaff(i) { staffList.splice(i,1); renderStaff(); syncPreview(); }
+
+// ─── SELECTION HELPERS ────────────────────────────────────────────────────
+function selectGender(g) {
+  selectedGender = g;
+  document.getElementById('gen-m').classList.toggle('selected', g==='male');
+  document.getElementById('gen-f').classList.toggle('selected', g==='female');
+  syncPreview();
+}
+function selectLocation(l) {
+  selectedLocation = l;
+  document.getElementById('loc-in').classList.toggle('selected', l==='inside');
+  document.getElementById('loc-out').classList.toggle('selected', l==='outside');
+  autoUpdateText(); syncPreview();
+}
+function selectReason(r) {
+  selectedReason = r;
+  const map = {sports_practice:'sp',sports_event:'se',cultural_practice:'cp',cultural_event:'ce',technical_event:'te',other:'ot'};
+  Object.keys(map).forEach(k => document.getElementById('r-'+map[k]).classList.remove('selected'));
+  document.getElementById('r-'+map[r]).classList.add('selected');
+  document.getElementById('reason-custom-wrap').style.display = r==='other'?'block':'none';
+  autoUpdateText(); syncPreview();
+}
+function handleRoleSelect() {
+  const v = document.getElementById('s-role-select').value;
+  document.getElementById('role-custom-wrap').style.display = v==='custom'?'flex':'none';
+  syncPreview();
+}
+
+// ─── DATE FORMAT ──────────────────────────────────────────────────────────
+function formatDate(val) {
+  if (!val) return '—';
+  const d = new Date(val + 'T00:00:00');
+  return d.toLocaleDateString('en-IN', {day:'2-digit', month:'long', year:'numeric'});
+}
+
+function getReasonText() {
+  const map = {
+    sports_practice:  'Sports Practice',
+    sports_event:     'Sports Event / Tournament',
+    cultural_practice:'Cultural Program Practice',
+    cultural_event:   'Cultural Program / Event',
+    technical_event:  'Technical Event / Symposium',
+    other: document.getElementById('reason-custom').value || '[Reason]',
+  };
+  return map[selectedReason] || '[Reason]';
+}
+function getSenderRole() {
+  const sel = document.getElementById('s-role-select').value;
+  if (sel==='custom') return document.getElementById('s-role-custom').value || '[Role]';
+  return sel;
+}
+
+// ─── TEXT AUTO-GENERATE ────────────────────────────────────────────────────
+function markUserEdited() { userEditedText = true; }
+
+function generateAutoText() {
+  const eName      = document.getElementById('e-name').value  || '[Event Name]';
+  const eDate      = formatDate(document.getElementById('e-date').value);
+  const eVenue     = document.getElementById('e-venue').value || '[Venue]';
+  const reasonText = getReasonText();
+  const isOutside  = selectedLocation === 'outside';
+
+  const subj = `Request for Attendance Permission for ${reasonText} – ${isOutside?'Outside College':'Within College Campus'} – Reg.`;
+
+  const para1 = `We, the students of the PG & Research Department of Advanced Zoology and Biotechnology, Loyola College (Autonomous), Chennai, respectfully wish to bring to your kind notice that we are scheduled to participate in the ${eName}${eDate!=='—'?`, on ${eDate}`,''}${isOutside?`, to be held at ${eVenue}`:' to be held within the college campus'}.`;
+
+  const para2 = `The purpose of our participation is ${reasonText}. In this regard, we humbly request your kind permission to grant attendance exemption for the hours listed below:`;
+
+  return { subj, body: para1 + '\n\n' + para2 };
+}
+function autoUpdateText() {
+  if (userEditedText) return;
+  forceAutoUpdateText();
+}
+function forceAutoUpdateText() {
+  const { subj, body } = generateAutoText();
+  document.getElementById('l-subject').value = subj;
+  document.getElementById('l-body').value = body;
+  userEditedText = false;
+  syncPreview();
+}
+
+// ─── SYNC PREVIEW ─────────────────────────────────────────────────────────
+function syncPreview() {
+  const sName   = document.getElementById('s-name').value  || '[Name]';
+  const sDeptNo = document.getElementById('s-deptno').value;
+  const sCls    = document.getElementById('s-class').value;
+  const sRole   = getSenderRole();
+  const lDate   = formatDate(document.getElementById('l-date').value);
+  const lPlace  = document.getElementById('l-place').value || 'Chennai';
+  const lTitle  = document.getElementById('l-title').value;
+  const hodName = document.getElementById('hod-name').value || 'Dr. V. Pushpa Rani';
+  const salutation = selectedGender === 'male' ? 'Sir,' : "Ma'am,";
+
+  // Header
+  document.getElementById('lv-title').textContent = lTitle;
+
+  // Date (top) then Place (below)
+  document.getElementById('lv-date').textContent  = lDate;
+  document.getElementById('lv-place').textContent = lPlace;
+
+  // From block
+  document.getElementById('lv-sname').textContent = sName + ',';
+  const deptLine = document.getElementById('lv-sdeptno-line');
+  deptLine.textContent = sDeptNo ? sDeptNo + ',' : '';
+  deptLine.style.display = sDeptNo ? 'inline' : 'none';
+  document.getElementById('lv-sclass').textContent = (FULL_CLASS[sCls]||sCls) + ',';
+  document.getElementById('lv-srole').textContent  = sRole + ',';
+  document.getElementById('lv-salutation').textContent = salutation;
+
+  // Subject
+  document.getElementById('lv-subject').textContent = document.getElementById('l-subject').value;
+
+  // Body — render paragraphs
+  const bodyEl = document.getElementById('lv-body');
+  bodyEl.innerHTML = '';
+  const paragraphs = document.getElementById('l-body').value.split('\n\n');
+  paragraphs.forEach(p => {
+    if (!p.trim()) return;
+    const div = document.createElement('p');
+    div.textContent = p.trim();
+    bodyEl.appendChild(div);
+  });
+
+  // Hours table
+  const hb = document.getElementById('lv-hours-body');
+  hb.innerHTML = '';
+  if (selectedHours.length === 0) {
+    hb.innerHTML = '<tr><td colspan="2" style="text-align:center;color:#999;font-style:italic;">No hours selected</td></tr>';
+  } else {
+    selectedHours.forEach(i => {
+      hb.innerHTML += `<tr><td>${HOURS[i].label}</td><td>${HOURS[i].time}</td></tr>`;
+    });
+  }
+
+  // Students table — auto-scale font if > 12 students
+  const sb  = document.getElementById('lv-students-body');
+  sb.innerHTML = '';
+  const filled = students.filter(s => s.name || s.deptno);
+  const compactTable = document.getElementById('lv-students-section').querySelector('.compact-table');
+  if (filled.length > 15) {
+    compactTable.style.fontSize = '8pt';
+  } else if (filled.length > 10) {
+    compactTable.style.fontSize = '8.5pt';
+  } else {
+    compactTable.style.fontSize = '9.5pt';
+  }
+
+  if (filled.length === 0) {
+    sb.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;font-style:italic;">No students added</td></tr>';
+  } else {
+    filled.forEach((s,i) => {
+      sb.innerHTML += `<tr>
+        <td style="text-align:center;">${i+1}</td>
+        <td>${escHtml(s.name)||'—'}</td>
+        <td style="text-align:center;">${escHtml(s.deptno)||'—'}</td>
+        <td style="text-align:center;">${s.cls}</td>
+      </tr>`;
+    });
+  }
+
+  // Signatures
+  const sigWrap = document.getElementById('lv-signatures');
+  sigWrap.innerHTML = '';
+
+  // Sender sig
+  const senderSig = document.createElement('div');
+  senderSig.className = 'sign-unit';
+  senderSig.innerHTML = `
+    <div class="sign-line"></div>
+    <div class="sign-name">${escHtml(sName)}</div>
+    <div class="sign-role">${escHtml(sRole)}</div>
+    <div class="sign-dept">PG &amp; Research Dept. of AZ &amp; BT</div>`;
+  sigWrap.appendChild(senderSig);
+
+  // Staff sigs
+  staffList.forEach(sf => {
+    if (!sf.name && !sf.role) return;
+    const d = document.createElement('div');
+    d.className = 'sign-unit';
+    d.innerHTML = `
+      <div class="sign-line"></div>
+      <div class="sign-name">${escHtml(sf.name)||'—'}</div>
+      <div class="sign-role">${escHtml(sf.role)||'—'}</div>
+      <div class="sign-dept">Loyola College (Autonomous), Ch – 34</div>`;
+    sigWrap.appendChild(d);
+  });
+
+  // HOD
+  document.getElementById('lv-hod-name-sig').textContent = hodName;
+}
+
+// ─── TAB SWITCH ───────────────────────────────────────────────────────────
+function switchTab(id, btn) {
+  // Hide/Show panes
+  document.getElementById('pane-form').style.display = (id === 'form') ? 'block' : 'none';
+  document.getElementById('pane-preview').style.display = (id === 'preview') ? 'block' : 'none';
+  
+  // Update active button styling
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  
+  // Trigger update
+  if (id === 'preview') {
+    syncPreview();
+  }
+}
+
+// ─── PRINT / PDF ──────────────────────────────────────────────────────────
+function showPrintModal() {
+  const mob = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  document.getElementById('modal-mobile-note').style.display = mob ? 'block' : 'none';
+  document.getElementById('print-modal').style.display = 'flex';
+}
+function closePrintModal() {
+  document.getElementById('print-modal').style.display = 'none';
+  window.print();
+}
+
+function downloadPDF() {
+  syncPreview();
+  const element = document.getElementById('letter-area');
+  // Ensure the preview pane is displayed before capturing
+  document.getElementById('pane-preview').style.display = 'block';
+  
+  const opt = {
+    margin: 0,
+    filename: 'Loyola_Letter.pdf',
+    image: { type: 'jpeg', quality: 1 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+  html2pdf().set(opt).from(element).save();
+}
+
+// ─── UTILITY ──────────────────────────────────────────────────────────────
+function escHtml(str) {
+  return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────
+forceAutoUpdateText();
+syncPreview();
+</script>
+</body>
+</html>
