@@ -537,350 +537,100 @@ table.students-table tr:nth-child(even){background:#faf6ee;}
 </div>
 
 <script>
-// ─── DATA ───────────────────────────────────────────────────────────────────
+// ─── DATA ──────────────────────────────────────────────────────────
 const HOURS = [
   {label:"1st Hour", time:"08:15 AM – 09:10 AM"},
   {label:"2nd Hour", time:"09:10 AM – 10:05 AM"},
   {label:"3rd Hour", time:"10:05 AM – 11:00 AM"},
   {label:"4th Hour", time:"11:25 AM – 12:20 PM"},
-  {label:"5th Hour", time:"12:20 PM – 01:15 PM"},
+  {label:"5th Hour", time:"12:20 PM – 01:15 PM"}
 ];
 const FULL_CLASS = {
-  "I B.Sc. AZ-BT":  "I Year B.Sc. Advanced Zoology and Biotechnology",
+  "I B.Sc. AZ-BT": "I Year B.Sc. Advanced Zoology and Biotechnology",
   "II B.Sc. AZ-BT": "II Year B.Sc. Advanced Zoology and Biotechnology",
-  "III B.Sc. AZ-BT":"III Year B.Sc. Advanced Zoology and Biotechnology",
-  "I M.Sc. Zoo":    "I Year M.Sc. Zoology",
-  "II M.Sc. Zoo":   "II Year M.Sc. Zoology",
+  "III B.Sc. AZ-BT": "III Year B.Sc. Advanced Zoology and Biotechnology",
+  "I M.Sc. Zoo": "I Year M.Sc. Zoology",
+  "II M.Sc. Zoo": "II Year M.Sc. Zoology"
 };
 
-let selectedHours    = [0,1,2];
-let selectedGender   = 'female'; // DEFAULT: female
+let selectedHours = [0,1,2];
+let selectedGender = 'female';
 let selectedLocation = 'inside';
-let selectedReason   = 'sports_practice';
-let userEditedText   = false;
-let students = [
-  {name:'',deptno:'',cls:'I B.Sc. AZ-BT'},
-  {name:'',deptno:'',cls:'I B.Sc. AZ-BT'},
-  {name:'',deptno:'',cls:'I B.Sc. AZ-BT'},
-];
+let selectedReason = 'sports_practice';
+let userEditedText = false;
+let students = [{name:'',deptno:'',cls:'I B.Sc. AZ-BT'},{name:'',deptno:'',cls:'I B.Sc. AZ-BT'},{name:'',deptno:'',cls:'I B.Sc. AZ-BT'}];
 let staffList = [];
 
-// ─── DATE INIT ────────────────────────────────────────────────────────────
-const today = new Date();
-const todayStr = today.toISOString().split('T')[0];
-const dInput = document.getElementById('l-date');
-dInput.value = todayStr;
-dInput.min = new Date(Date.now()-7*864e5).toISOString().split('T')[0];
-dInput.max = new Date(Date.now()+7*864e5).toISOString().split('T')[0];
+// ─── GLOBAL FUNCTIONS ──────────────────────────────────────────
+window.escHtml = function(str) { return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
 
-// ─── HOURS BUILDER ────────────────────────────────────────────────────────
-(function(){
-  const c = document.getElementById('hours-container');
-  HOURS.forEach((h,i) => {
-    const el = document.createElement('label');
-    el.className = 'check-opt' + (selectedHours.includes(i)?' selected':'');
-    el.id = 'hour-'+i;
-    el.innerHTML = `<div class="check-top">
-      <input type="checkbox" ${selectedHours.includes(i)?'checked':''} style="accent-color:var(--gold)"/>
-      <strong>${h.label}</strong>
-    </div>
-    <div class="hour-time">${h.time}</div>`;
-    el.onclick = () => toggleHour(i, el);
-    c.appendChild(el);
-  });
-})();
-
-function toggleHour(i, el) {
-  if (selectedHours.includes(i)) {
-    selectedHours = selectedHours.filter(h => h !== i);
-  } else {
-    selectedHours = [...selectedHours, i].sort((a,b)=>a-b);
-  }
-  el.classList.toggle('selected', selectedHours.includes(i));
-  el.querySelector('input').checked = selectedHours.includes(i);
-  syncPreview();
-}
-
-// ─── STUDENTS ─────────────────────────────────────────────────────────────
-function renderStudents() {
-  const tb = document.getElementById('students-body');
-  tb.innerHTML = '';
-  const CLASS_OPTS = ['I B.Sc. AZ-BT','II B.Sc. AZ-BT','III B.Sc. AZ-BT','I M.Sc. Zoo','II M.Sc. Zoo'];
-  students.forEach((s,i) => {
-    const opts = CLASS_OPTS.map(c => `<option value="${c}" ${s.cls===c?'selected':''}>${c}</option>`).join('');
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${i+1}</td>
-      <td><input style="width:100%;padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-family:'Georgia',serif;font-size:13px;" value="${escHtml(s.name)}" placeholder="Full name" oninput="students[${i}].name=this.value;syncPreview()"/></td>
-      <td><input style="width:100%;padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-family:'Georgia',serif;font-size:13px;" value="${escHtml(s.deptno)}" placeholder="25-UAZ-016" oninput="students[${i}].deptno=this.value;syncPreview()"/></td>
-      <td><select style="width:100%;padding:5px 8px;border:1px solid #ddd;border-radius:4px;font-family:'Georgia',serif;font-size:12px;" onchange="students[${i}].cls=this.value;syncPreview()">${opts}</select></td>
-      <td><button class="btn btn-danger" onclick="removeStudent(${i})"><i class="fa-solid fa-xmark"></i></button></td>`;
-    tb.appendChild(tr);
-  });
-}
-function addStudent() { students.push({name:'',deptno:'',cls:'I B.Sc. AZ-BT'}); renderStudents(); syncPreview(); }
-function removeStudent(i) { students.splice(i,1); renderStudents(); syncPreview(); }
-renderStudents();
-
-// ─── STAFF ────────────────────────────────────────────────────────────────
-function renderStaff() {
-  const c = document.getElementById('staff-list');
-  c.innerHTML = '';
-  staffList.forEach((sf,i) => {
-    const row = document.createElement('div');
-    row.className = 'staff-row';
-    row.innerHTML = `
-      <div class="field"><label>Staff Name</label><input type="text" value="${escHtml(sf.name)}" placeholder="Dr. K. Selvam" oninput="staffList[${i}].name=this.value;syncPreview()"/></div>
-      <div class="field"><label>Designation</label><input type="text" value="${escHtml(sf.role)}" placeholder="Staff Advisor" oninput="staffList[${i}].role=this.value;syncPreview()"/></div>
-      <div class="field"><label>&nbsp;</label><button class="btn btn-danger" style="margin-top:22px;" onclick="removeStaff(${i})"><i class="fa-solid fa-xmark"></i> Remove</button></div>`;
-    c.appendChild(row);
-  });
-}
-function addStaff() { staffList.push({name:'',role:''}); renderStaff(); syncPreview(); }
-function removeStaff(i) { staffList.splice(i,1); renderStaff(); syncPreview(); }
-
-// ─── SELECTION HELPERS ────────────────────────────────────────────────────
-function selectGender(g) {
-  selectedGender = g;
-  document.getElementById('gen-m').classList.toggle('selected', g==='male');
-  document.getElementById('gen-f').classList.toggle('selected', g==='female');
-  syncPreview();
-}
-function selectLocation(l) {
-  selectedLocation = l;
-  document.getElementById('loc-in').classList.toggle('selected', l==='inside');
-  document.getElementById('loc-out').classList.toggle('selected', l==='outside');
-  autoUpdateText(); syncPreview();
-}
-function selectReason(r) {
-  selectedReason = r;
-  const map = {sports_practice:'sp',sports_event:'se',cultural_practice:'cp',cultural_event:'ce',technical_event:'te',other:'ot'};
-  Object.keys(map).forEach(k => document.getElementById('r-'+map[k]).classList.remove('selected'));
-  document.getElementById('r-'+map[r]).classList.add('selected');
-  document.getElementById('reason-custom-wrap').style.display = r==='other'?'block':'none';
-  autoUpdateText(); syncPreview();
-}
-function handleRoleSelect() {
-  const v = document.getElementById('s-role-select').value;
-  document.getElementById('role-custom-wrap').style.display = v==='custom'?'flex':'none';
-  syncPreview();
-}
-
-// ─── DATE FORMAT ──────────────────────────────────────────────────────────
-function formatDate(val) {
-  if (!val) return '—';
-  const d = new Date(val + 'T00:00:00');
-  return d.toLocaleDateString('en-IN', {day:'2-digit', month:'long', year:'numeric'});
-}
-
-function getReasonText() {
-  const map = {
-    sports_practice:  'Sports Practice',
-    sports_event:     'Sports Event / Tournament',
-    cultural_practice:'Cultural Program Practice',
-    cultural_event:   'Cultural Program / Event',
-    technical_event:  'Technical Event / Symposium',
-    other: document.getElementById('reason-custom').value || '[Reason]',
-  };
-  return map[selectedReason] || '[Reason]';
-}
-function getSenderRole() {
-  const sel = document.getElementById('s-role-select').value;
-  if (sel==='custom') return document.getElementById('s-role-custom').value || '[Role]';
-  return sel;
-}
-
-// ─── TEXT AUTO-GENERATE ────────────────────────────────────────────────────
-function markUserEdited() { userEditedText = true; }
-
-function generateAutoText() {
-  const eName      = document.getElementById('e-name').value  || '[Event Name]';
-  const eDate      = formatDate(document.getElementById('e-date').value);
-  const eVenue     = document.getElementById('e-venue').value || '[Venue]';
-  const reasonText = getReasonText();
-  const isOutside  = selectedLocation === 'outside';
-
-  const subj = `Request for Attendance Permission for ${reasonText} – ${isOutside?'Outside College':'Within College Campus'} – Reg.`;
-
-  const para1 = `We, the students of the PG & Research Department of Advanced Zoology and Biotechnology, Loyola College (Autonomous), Chennai, respectfully wish to bring to your kind notice that we are scheduled to participate in the ${eName}${eDate!=='—'?`, on ${eDate}`,''}${isOutside?`, to be held at ${eVenue}`:' to be held within the college campus'}.`;
-
-  const para2 = `The purpose of our participation is ${reasonText}. In this regard, we humbly request your kind permission to grant attendance exemption for the hours listed below:`;
-
-  return { subj, body: para1 + '\n\n' + para2 };
-}
-function autoUpdateText() {
-  if (userEditedText) return;
-  forceAutoUpdateText();
-}
-function forceAutoUpdateText() {
-  const { subj, body } = generateAutoText();
-  document.getElementById('l-subject').value = subj;
-  document.getElementById('l-body').value = body;
-  userEditedText = false;
-  syncPreview();
-}
-
-// ─── SYNC PREVIEW ─────────────────────────────────────────────────────────
-function syncPreview() {
-  const sName   = document.getElementById('s-name').value  || '[Name]';
-  const sDeptNo = document.getElementById('s-deptno').value;
-  const sCls    = document.getElementById('s-class').value;
-  const sRole   = getSenderRole();
-  const lDate   = formatDate(document.getElementById('l-date').value);
-  const lPlace  = document.getElementById('l-place').value || 'Chennai';
-  const lTitle  = document.getElementById('l-title').value;
-  const hodName = document.getElementById('hod-name').value || 'Dr. V. Pushpa Rani';
-  const salutation = selectedGender === 'male' ? 'Sir,' : "Ma'am,";
-
-  // Header
-  document.getElementById('lv-title').textContent = lTitle;
-
-  // Date (top) then Place (below)
-  document.getElementById('lv-date').textContent  = lDate;
-  document.getElementById('lv-place').textContent = lPlace;
-
-  // From block
-  document.getElementById('lv-sname').textContent = sName + ',';
-  const deptLine = document.getElementById('lv-sdeptno-line');
-  deptLine.textContent = sDeptNo ? sDeptNo + ',' : '';
-  deptLine.style.display = sDeptNo ? 'inline' : 'none';
-  document.getElementById('lv-sclass').textContent = (FULL_CLASS[sCls]||sCls) + ',';
-  document.getElementById('lv-srole').textContent  = sRole + ',';
-  document.getElementById('lv-salutation').textContent = salutation;
-
-  // Subject
-  document.getElementById('lv-subject').textContent = document.getElementById('l-subject').value;
-
-  // Body — render paragraphs
-  const bodyEl = document.getElementById('lv-body');
-  bodyEl.innerHTML = '';
-  const paragraphs = document.getElementById('l-body').value.split('\n\n');
-  paragraphs.forEach(p => {
-    if (!p.trim()) return;
-    const div = document.createElement('p');
-    div.textContent = p.trim();
-    bodyEl.appendChild(div);
-  });
-
-  // Hours table
-  const hb = document.getElementById('lv-hours-body');
-  hb.innerHTML = '';
-  if (selectedHours.length === 0) {
-    hb.innerHTML = '<tr><td colspan="2" style="text-align:center;color:#999;font-style:italic;">No hours selected</td></tr>';
-  } else {
-    selectedHours.forEach(i => {
-      hb.innerHTML += `<tr><td>${HOURS[i].label}</td><td>${HOURS[i].time}</td></tr>`;
-    });
-  }
-
-  // Students table — auto-scale font if > 12 students
-  const sb  = document.getElementById('lv-students-body');
-  sb.innerHTML = '';
-  const filled = students.filter(s => s.name || s.deptno);
-  const compactTable = document.getElementById('lv-students-section').querySelector('.compact-table');
-  if (filled.length > 15) {
-    compactTable.style.fontSize = '8pt';
-  } else if (filled.length > 10) {
-    compactTable.style.fontSize = '8.5pt';
-  } else {
-    compactTable.style.fontSize = '9.5pt';
-  }
-
-  if (filled.length === 0) {
-    sb.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;font-style:italic;">No students added</td></tr>';
-  } else {
-    filled.forEach((s,i) => {
-      sb.innerHTML += `<tr>
-        <td style="text-align:center;">${i+1}</td>
-        <td>${escHtml(s.name)||'—'}</td>
-        <td style="text-align:center;">${escHtml(s.deptno)||'—'}</td>
-        <td style="text-align:center;">${s.cls}</td>
-      </tr>`;
-    });
-  }
-
-  // Signatures
-  const sigWrap = document.getElementById('lv-signatures');
-  sigWrap.innerHTML = '';
-
-  // Sender sig
-  const senderSig = document.createElement('div');
-  senderSig.className = 'sign-unit';
-  senderSig.innerHTML = `
-    <div class="sign-line"></div>
-    <div class="sign-name">${escHtml(sName)}</div>
-    <div class="sign-role">${escHtml(sRole)}</div>
-    <div class="sign-dept">PG &amp; Research Dept. of AZ &amp; BT</div>`;
-  sigWrap.appendChild(senderSig);
-
-  // Staff sigs
-  staffList.forEach(sf => {
-    if (!sf.name && !sf.role) return;
-    const d = document.createElement('div');
-    d.className = 'sign-unit';
-    d.innerHTML = `
-      <div class="sign-line"></div>
-      <div class="sign-name">${escHtml(sf.name)||'—'}</div>
-      <div class="sign-role">${escHtml(sf.role)||'—'}</div>
-      <div class="sign-dept">Loyola College (Autonomous), Ch – 34</div>`;
-    sigWrap.appendChild(d);
-  });
-
-  // HOD
-  document.getElementById('lv-hod-name-sig').textContent = hodName;
-}
-
-// ─── TAB SWITCH ───────────────────────────────────────────────────────────
-function switchTab(id, btn) {
-  // Hide/Show panes
-  document.getElementById('pane-form').style.display = (id === 'form') ? 'block' : 'none';
-  document.getElementById('pane-preview').style.display = (id === 'preview') ? 'block' : 'none';
-  
-  // Update active button styling
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  
-  // Trigger update
-  if (id === 'preview') {
-    syncPreview();
-  }
-}
-
-// ─── PRINT / PDF ──────────────────────────────────────────────────────────
-function showPrintModal() {
-  const mob = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-  document.getElementById('modal-mobile-note').style.display = mob ? 'block' : 'none';
-  document.getElementById('print-modal').style.display = 'flex';
-}
-function closePrintModal() {
-  document.getElementById('print-modal').style.display = 'none';
-  window.print();
-}
-
-function downloadPDF() {
-  syncPreview();
-  const element = document.getElementById('letter-area');
-  // Ensure the preview pane is displayed before capturing
-  document.getElementById('pane-preview').style.display = 'block';
-  
-const opt = {
-    margin: 0,
-    filename: 'Loyola_Letter.pdf',
-    image: { type: 'jpeg', quality: 1 },
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } // <--- NO COMMA HERE
+window.switchTab = function(id, btn) {
+    document.getElementById('pane-form').style.display = (id === 'form') ? 'block' : 'none';
+    document.getElementById('pane-preview').style.display = (id === 'preview') ? 'block' : 'none';
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    if (id === 'preview') window.syncPreview();
 };
-  html2pdf().set(opt).from(element).save();
+
+window.syncPreview = function() {
+    const sName = document.getElementById('s-name').value || '[Name]';
+    const sDeptNo = document.getElementById('s-deptno').value;
+    const sCls = document.getElementById('s-class').value;
+    const lDate = formatDate(document.getElementById('l-date').value);
+    const lTitle = document.getElementById('l-title').value;
+    const hodName = document.getElementById('hod-name').value || 'Dr. V. Pushpa Rani';
+    
+    document.getElementById('lv-title').textContent = lTitle;
+    document.getElementById('lv-date').textContent = lDate;
+    document.getElementById('lv-sname').textContent = sName + ',';
+    document.getElementById('lv-subject').textContent = document.getElementById('l-subject').value;
+
+    const bodyEl = document.getElementById('lv-body');
+    bodyEl.innerHTML = '';
+    document.getElementById('l-body').value.split('\n\n').forEach(p => {
+        if(p.trim()){ const div = document.createElement('p'); div.textContent = p.trim(); bodyEl.appendChild(div); }
+    });
+    document.getElementById('lv-hod-name-sig').textContent = hodName;
+};
+
+window.downloadPDF = function() {
+    window.syncPreview();
+    const opt = {
+        margin: 0,
+        filename: 'Loyola_Letter.pdf',
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(document.getElementById('letter-area')).save();
+};
+
+window.showPrintModal = function() { document.getElementById('print-modal').style.display = 'flex'; };
+window.closePrintModal = function() { document.getElementById('print-modal').style.display = 'none'; window.print(); };
+
+// ─── HELPER FUNCTIONS ──────────────────────────────────────────
+function formatDate(val) {
+    if (!val) return '—';
+    const d = new Date(val + 'T00:00:00');
+    return d.toLocaleDateString('en-IN', {day:'2-digit', month:'long', year:'numeric'});
 }
 
-// ─── UTILITY ──────────────────────────────────────────────────────────────
-function escHtml(str) {
-  return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function getSenderRole() {
+    const sel = document.getElementById('s-role-select').value;
+    return sel === 'custom' ? (document.getElementById('s-role-custom').value || '[Role]') : sel;
 }
 
-// ─── INIT ─────────────────────────────────────────────────────────────────
-forceAutoUpdateText();
-syncPreview();
+function forceAutoUpdateText() {
+    // Basic auto-fill logic
+    document.getElementById('l-subject').value = "Request for Attendance Permission";
+    document.getElementById('l-body').value = "Respected Sir/Ma'am,\n\nWe request your permission for the event.";
+    window.syncPreview();
+}
+
+// ─── INITIALIZATION ────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    forceAutoUpdateText();
+});
 </script>
 </body>
 </html>
